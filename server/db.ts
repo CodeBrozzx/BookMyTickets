@@ -39,19 +39,31 @@ class DatabaseManager {
   private attachErrorHandlers() {
     if (this.errorHandlersAttached || !this.client) return;
     
+    // Handle connection errors
     this.client.on('error', async (err: any) => {
-      // Mark error as handled to prevent crash
-      err.handled = true;
-      
-      console.error('Database connection error:', err);
-      this.connected = false;
-      
-      // Reconnect on next operation
       try {
+        // Mark error as handled to prevent crash
+        err.handled = true;
+        
+        console.error('Database connection error:', err);
+        this.connected = false;
+        
+        // Reconnect on next operation
         console.log('Attempting automatic reconnection...');
         await this.reconnect();
       } catch (reconnectErr) {
         console.error('Auto reconnection failed:', reconnectErr);
+      }
+    });
+    
+    // Handle connection ends
+    this.client.on('end', async () => {
+      try {
+        console.log('Database connection ended, attempting to reconnect...');
+        this.connected = false;
+        await this.reconnect();
+      } catch (reconnectErr) {
+        console.error('Reconnection after end failed:', reconnectErr);
       }
     });
     
@@ -84,22 +96,42 @@ class DatabaseManager {
   
   public async reconnect(): Promise<boolean> {
     try {
+      // Mark as disconnected first
+      this.connected = false;
+      this.errorHandlersAttached = false;
+      
       // Close existing connection if it exists
       if (this.client) {
         try {
-          this.connected = false;
+          // Set a timeout to avoid hanging
+          const timeout = setTimeout(() => {
+            console.log('Client end operation timed out, forcing reconnect');
+            this.client = null;
+          }, 1000);
+          
           await this.client.end().catch(() => {});
+          clearTimeout(timeout);
         } catch (err) {
           // Ignore end errors
+          console.log('Ignoring client end error during reconnect');
         }
       }
       
-      // Create new connection
+      // Reset client and create new connection
+      this.client = null;
+      this.db = null;
       this.createClient();
+      
+      // Connect with the new client
       return await this.connect();
     } catch (err) {
       console.error('Database reconnection failed:', err);
       this.connected = false;
+      // Make sure to clean up
+      this.client = null;
+      this.db = null;
+      // Create a fresh client for next attempt
+      this.createClient();
       return false;
     }
   }
@@ -156,9 +188,36 @@ const dbManager = new DatabaseManager();
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
   get: (target, prop) => {
     const manager = dbManager.getDb();
+    
+    // Handle missing connection by returning a proxy that auto-reconnects
     if (!manager) {
-      throw new Error('Database not connected');
+      // For methods, return a function that attempts reconnection before operation
+      if (typeof prop === 'string' && ['select', 'insert', 'update', 'delete', 'query'].includes(prop)) {
+        return async (...args: any[]) => {
+          console.log(`Attempting to reconnect before database operation: ${String(prop)}`);
+          const reconnected = await dbManager.reconnect();
+          
+          if (reconnected) {
+            const newManager = dbManager.getDb();
+            if (newManager) {
+              const method = newManager[prop as keyof typeof newManager];
+              if (typeof method === 'function') {
+                return (method as Function).apply(newManager, args);
+              }
+            }
+          }
+          
+          console.error(`Cannot perform database operation: ${String(prop)}, connection failed`);
+          // Return empty results rather than crashing
+          return [];
+        };
+      }
+      
+      // For non-methods, try to gracefully handle
+      console.error(`Database not connected when accessing: ${String(prop)}`);
+      return undefined;
     }
+    
     return manager[prop as keyof typeof manager];
   }
 });

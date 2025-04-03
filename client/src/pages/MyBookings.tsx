@@ -146,7 +146,7 @@ export default function MyBookings() {
                     
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Seats:</span>
-                      <span>{booking.seats?.length || 0} seats</span>
+                      <span>{Array.isArray(booking.seats) ? booking.seats.length : 0} seats</span>
                     </div>
                   </div>
                 </div>
