@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function Footer() {
   return (
@@ -16,28 +17,28 @@ export default function Footer() {
             <div>
               <h4 className="font-heading font-semibold mb-4">Movies</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><Link href="/"><a className="hover:text-primary">Now Showing</a></Link></li>
-                <li><a href="#" className="hover:text-primary">Coming Soon</a></li>
-                <li><a href="#" className="hover:text-primary">Cinemas</a></li>
+                <li><Link href="/" className="hover:text-primary">Now Showing</Link></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">Coming Soon</Button></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">Cinemas</Button></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-heading font-semibold mb-4">Help</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-primary">About Us</a></li>
-                <li><a href="#" className="hover:text-primary">Contact Us</a></li>
-                <li><a href="#" className="hover:text-primary">Terms of Use</a></li>
-                <li><a href="#" className="hover:text-primary">Privacy Policy</a></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">About Us</Button></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">Contact Us</Button></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">Terms of Use</Button></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">Privacy Policy</Button></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-heading font-semibold mb-4">My Account</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-primary">My Tickets</a></li>
-                <li><a href="#" className="hover:text-primary">Transaction History</a></li>
-                <li><a href="#" className="hover:text-primary">Preferences</a></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">My Tickets</Button></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">Transaction History</Button></li>
+                <li><Button variant="link" className="p-0 hover:text-primary text-muted-foreground">Preferences</Button></li>
               </ul>
             </div>
           </div>
