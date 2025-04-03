@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initDb } from "./db";
+import { PgStorage } from "./pgStorage";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +40,22 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize the database connection
+  const dbConnected = await initDb();
+  
+  // Create a new PgStorage instance if the database is connected
+  let activeStorage = storage;
+  if (dbConnected) {
+    log("Using PostgreSQL database for storage");
+    const pgStorage = new PgStorage();
+    // Switch to the PostgreSQL storage
+    Object.assign(storage, pgStorage);
+    // Initialize the database with sample data
+    await pgStorage.initializeData();
+  } else {
+    log("Using in-memory storage");
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

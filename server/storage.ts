@@ -35,6 +35,9 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Database initialization
+  initializeData?(): Promise<void>;
 }
 
 // In-memory storage implementation
@@ -66,7 +69,7 @@ export class MemStorage implements IStorage {
     this.initializeData();
   }
   
-  private initializeData() {
+  async initializeData(): Promise<void> {
     // Add movies
     initialMovies.forEach(movie => {
       this.movies.set(movie.id, movie);
@@ -144,7 +147,12 @@ export class MemStorage implements IStorage {
   
   async createSeat(seat: InsertSeat): Promise<Seat> {
     const id = this.seatIdCounter++;
-    const newSeat = { ...seat, id };
+    // Make sure booked is set to false if it's undefined
+    const newSeat = { 
+      ...seat, 
+      id,
+      booked: seat.booked ?? false
+    };
     this.seats.set(id, newSeat);
     return newSeat;
   }
