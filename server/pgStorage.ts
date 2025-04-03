@@ -9,8 +9,21 @@ import {
 } from '../shared/schema';
 import { IStorage } from './storage';
 import { generateSeats } from '../client/src/lib/data';
+import session from 'express-session';
+import connectPg from 'connect-pg-simple';
 
 export class PgStorage implements IStorage {
+  public sessionStore: session.Store;
+  
+  constructor() {
+    const PostgresStore = connectPg(session);
+    
+    // Use same connection config as in db.ts
+    this.sessionStore = new PostgresStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+    });
+  }
   // Movies
   async getAllMovies(): Promise<Movie[]> {
     return await safeDbOperation(

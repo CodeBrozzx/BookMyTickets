@@ -5,8 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import BookingSteps from "@/pages/BookingSteps";
+import MyBookings from "@/pages/MyBookings";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AuthPage from "@/pages/auth-page";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
@@ -15,7 +19,15 @@ function Router() {
       <main className="flex-grow">
         <Switch>
           <Route path="/" component={Home} />
-          <Route path="/booking/:movieId" component={BookingSteps} />
+          <Route path="/auth" component={AuthPage} />
+          <Route path="/booking/:movieId">
+            {(params) => (
+              <ProtectedRoute path={`/booking/${params.movieId}`} component={() => <BookingSteps />} />
+            )}
+          </Route>
+          <Route path="/my-bookings">
+            <ProtectedRoute path="/my-bookings" component={MyBookings} />
+          </Route>
           <Route component={NotFound} />
         </Switch>
       </main>
@@ -27,8 +39,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

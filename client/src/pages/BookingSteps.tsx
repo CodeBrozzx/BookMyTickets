@@ -13,11 +13,13 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function BookingSteps() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/booking/:movieId");
   const { toast } = useToast();
+  const { user } = useAuth();
   
   // Booking state
   const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (time selection)
@@ -34,26 +36,29 @@ export default function BookingSteps() {
   
   // Fetch showtimes
   const { data: showTimes, isLoading: isLoadingShowTimes } = useQuery<ShowTime[]>({
-    queryKey: [`/api/showtimes/${params?.movieId}`],
+    queryKey: ['/api/showtimes', params?.movieId],
     enabled: !!params?.movieId
   });
   
   // Fetch seats for a specific showtime
   const { data: availableSeats, isLoading: isLoadingSeats } = useQuery<Seat[]>({
-    queryKey: [`/api/seats/${selectedTime?.id}`],
+    queryKey: ['/api/seats', selectedTime?.id],
     enabled: !!selectedTime?.id,
   });
   
   // Create booking mutation
   const bookingMutation = useMutation({
     mutationFn: async (bookingData: BookingData) => {
+      console.log('Creating booking with data:', bookingData);
       const response = await apiRequest('POST', '/api/bookings', bookingData);
-      return response.json();
+      const result = await response.json();
+      console.log('Booking created:', result);
+      return result;
     },
     onSuccess: (data) => {
       setBookingId(data.id);
       setCurrentStep(4);
-      queryClient.invalidateQueries({ queryKey: [`/api/seats/${selectedTime?.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/seats', selectedTime?.id] });
     },
     onError: (error) => {
       toast({
@@ -112,7 +117,8 @@ export default function BookingSteps() {
       showTimeId: selectedTime?.id || 0,
       seats: selectedSeats.map(seat => seat.id),
       totalAmount: calculateTotal(),
-      bookingDate: new Date()
+      bookingDate: new Date(),
+      userId: user?.id // Add the user ID if authenticated
     });
   };
   

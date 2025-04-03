@@ -2,8 +2,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateBookingId } from "../client/src/lib/utils";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes and middleware
+  setupAuth(app);
   // Get all movies
   app.get("/api/movies", async (req, res) => {
     try {
@@ -88,6 +91,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate a unique booking ID
       const bookingId = generateBookingId();
       
+      // Add user ID if user is authenticated
+      const userId = req.isAuthenticated() ? req.user.id : undefined;
+      
       // Create the booking
       const booking = await storage.createBooking({
         id: bookingId,
@@ -95,7 +101,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         showTimeId,
         seats,
         totalAmount,
-        bookingDate: new Date()
+        bookingDate: new Date(),
+        userId
       });
       
       // Mark the seats as booked
@@ -106,6 +113,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(booking);
     } catch (error) {
       res.status(500).json({ message: "Failed to create booking", error });
+    }
+  });
+  
+  // Get user's bookings (protected route - requires authentication)
+  app.get("/api/my-bookings", async (req, res) => {
+    // Check if user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    try {
+      // Get user's bookings
+      const userId = req.user.id;
+      const bookings = await storage.getBookingsByUser(userId);
+      res.json(bookings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch bookings", error });
     }
   });
 

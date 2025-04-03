@@ -8,6 +8,8 @@ import {
 import { initialMovies, initialShowTimes, generateSeats } from "../client/src/lib/data";
 
 // Storage interface
+import session from "express-session";
+
 export interface IStorage {
   // Movies
   getAllMovies(): Promise<Movie[]>;
@@ -36,9 +38,16 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
+  // Session store for authentication
+  sessionStore: session.Store;
+  
   // Database initialization
   initializeData?(): Promise<void>;
 }
+
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
 
 // In-memory storage implementation
 export class MemStorage implements IStorage {
@@ -47,6 +56,7 @@ export class MemStorage implements IStorage {
   private seats: Map<number, Seat>;
   private bookings: Map<string, Booking>;
   private users: Map<number, User>;
+  public sessionStore: session.Store;
   
   private movieIdCounter: number;
   private showtimeIdCounter: number;
@@ -59,6 +69,10 @@ export class MemStorage implements IStorage {
     this.seats = new Map();
     this.bookings = new Map();
     this.users = new Map();
+    
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // prune expired entries every 24h
+    });
     
     this.movieIdCounter = 1;
     this.showtimeIdCounter = 1;
