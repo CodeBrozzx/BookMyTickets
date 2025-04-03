@@ -41,30 +41,45 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize the database connection
-  // Try to connect to the database
-  const dbConnected = await initDb();
+  // Set up global unhandled rejection handler to prevent crashes
+  process.on('unhandledRejection', (reason, promise) => {
+    log(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
+    // Don't crash the application, just log the error
+  });
   
-  // Determine which storage to use
-  let activeStorage = storage;
+  // Make sure we have a storage mechanism regardless of database connection
+  let activeStorage = storage; // Default to memory storage
+  
   try {
+    // Try to connect to the database
+    const dbConnected = await initDb();
+    
     if (dbConnected) {
-      log("Using PostgreSQL database for storage");
-      const pgStorage = new PgStorage();
-      // Switch to the PostgreSQL storage
-      Object.assign(storage, pgStorage);
-      // Initialize the database with sample data
-      await pgStorage.initializeData();
+      try {
+        log("Using PostgreSQL database for storage");
+        const pgStorage = new PgStorage();
+        // Switch to the PostgreSQL storage
+        Object.assign(storage, pgStorage);
+        // Initialize the database with sample data
+        await pgStorage.initializeData();
+      } catch (pgError) {
+        log(`Error setting up PostgreSQL storage: ${pgError}`);
+        log("Falling back to in-memory storage");
+        // Ensure in-memory storage is initialized
+        await storage.initializeData();
+      }
     } else {
       log("Database connection failed, using in-memory storage");
       // Ensure in-memory storage is initialized
       await storage.initializeData();
     }
   } catch (error) {
-    log(`Error setting up storage: ${error}`);
-    log("Falling back to in-memory storage");
-    // Ensure we're using in-memory storage if there's an error
-    // and that it's initialized
-    await storage.initializeData();
+    log(`Error in storage setup: ${error}`);
+    log("Ensuring in-memory storage is initialized");
+    // Make absolutely sure we have functioning storage
+    await storage.initializeData().catch(initError => {
+      log(`Critical error: Failed to initialize memory storage: ${initError}`);
+    });
   }
   
   const server = await registerRoutes(app);
@@ -73,8 +88,9 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    console.error('Express error handler:', err);
     res.status(status).json({ message });
-    throw err;
+    // Don't rethrow the error, as it will crash the server
   });
 
   // importantly only setup vite in development and after

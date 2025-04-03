@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { db } from './db';
+import { db, safeDbOperation } from './db';
 import { 
   InsertMovie, Movie, InsertShowtime, Showtime, 
   InsertSeat, Seat, InsertBooking, Booking, InsertUser, User
@@ -13,101 +13,176 @@ import { generateSeats } from '../client/src/lib/data';
 export class PgStorage implements IStorage {
   // Movies
   async getAllMovies(): Promise<Movie[]> {
-    return await db.select().from(movies);
+    return await safeDbOperation(
+      async () => await db.select().from(movies),
+      []
+    );
   }
 
   async getMovie(id: number): Promise<Movie | undefined> {
-    const result = await db.select().from(movies).where(eq(movies.id, id));
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.select().from(movies).where(eq(movies.id, id));
+        return result[0];
+      },
+      undefined
+    );
   }
 
   async createMovie(movie: InsertMovie): Promise<Movie> {
-    const result = await db.insert(movies).values(movie).returning();
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.insert(movies).values(movie).returning();
+        return result[0];
+      },
+      {} as Movie
+    );
   }
 
   // Showtimes
   async getAllShowtimes(): Promise<Showtime[]> {
-    return await db.select().from(showtimes);
+    return await safeDbOperation(
+      async () => await db.select().from(showtimes),
+      []
+    );
   }
 
   async getShowtime(id: number): Promise<Showtime | undefined> {
-    const result = await db.select().from(showtimes).where(eq(showtimes.id, id));
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.select().from(showtimes).where(eq(showtimes.id, id));
+        return result[0];
+      },
+      undefined
+    );
   }
 
   async getShowtimesByMovie(movieId: number): Promise<Showtime[]> {
-    return await db.select().from(showtimes).where(eq(showtimes.movieId, movieId));
+    return await safeDbOperation(
+      async () => await db.select().from(showtimes).where(eq(showtimes.movieId, movieId)),
+      []
+    );
   }
 
   async createShowtime(showtime: InsertShowtime): Promise<Showtime> {
-    const result = await db.insert(showtimes).values(showtime).returning();
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.insert(showtimes).values(showtime).returning();
+        return result[0];
+      },
+      {} as Showtime
+    );
   }
 
   // Seats
   async getSeat(id: number): Promise<Seat | undefined> {
-    const result = await db.select().from(seats).where(eq(seats.id, id));
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.select().from(seats).where(eq(seats.id, id));
+        return result[0];
+      },
+      undefined
+    );
   }
 
   async getSeatsByShowtime(showtimeId: number): Promise<Seat[]> {
-    return await db.select().from(seats).where(eq(seats.showTimeId, showtimeId));
+    return await safeDbOperation(
+      async () => await db.select().from(seats).where(eq(seats.showTimeId, showtimeId)),
+      []
+    );
   }
 
   async createSeat(seat: InsertSeat): Promise<Seat> {
-    const result = await db.insert(seats).values(seat).returning();
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.insert(seats).values(seat).returning();
+        return result[0];
+      },
+      {} as Seat
+    );
   }
 
   async updateSeatBookingStatus(id: number, booked: boolean): Promise<Seat | undefined> {
-    const result = await db.update(seats)
-      .set({ booked })
-      .where(eq(seats.id, id))
-      .returning();
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.update(seats)
+          .set({ booked })
+          .where(eq(seats.id, id))
+          .returning();
+        return result[0];
+      },
+      undefined
+    );
   }
 
   // Bookings
   async getBooking(id: string): Promise<Booking | undefined> {
-    const result = await db.select().from(bookings).where(eq(bookings.id, id));
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.select().from(bookings).where(eq(bookings.id, id));
+        return result[0];
+      },
+      undefined
+    );
   }
 
   async getBookingsByUser(userId: number): Promise<Booking[]> {
-    return await db.select().from(bookings).where(eq(bookings.userId, userId));
+    return await safeDbOperation(
+      async () => await db.select().from(bookings).where(eq(bookings.userId, userId)),
+      []
+    );
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
-    // Update seats to be booked
-    for (const seatId of booking.seats) {
-      await this.updateSeatBookingStatus(seatId, true);
-    }
-    
-    // Need to ensure the seats field is an array for proper insertion
-    const bookingData = {
-      ...booking,
-      seats: booking.seats as any // Cast to any to avoid type errors with array handling
-    };
-    
-    const result = await db.insert(bookings).values(bookingData).returning();
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        // Update seats to be booked
+        for (const seatId of booking.seats) {
+          await this.updateSeatBookingStatus(seatId, true);
+        }
+        
+        // Need to ensure the seats field is an array for proper insertion
+        const bookingData = {
+          ...booking,
+          seats: booking.seats as any // Cast to any to avoid type errors with array handling
+        };
+        
+        const result = await db.insert(bookings).values(bookingData).returning();
+        return result[0];
+      },
+      {} as Booking
+    );
   }
 
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id));
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.select().from(users).where(eq(users.id, id));
+        return result[0];
+      },
+      undefined
+    );
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.select().from(users).where(eq(users.username, username));
+        return result[0];
+      },
+      undefined
+    );
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(user).returning();
-    return result[0];
+    return await safeDbOperation(
+      async () => {
+        const result = await db.insert(users).values(user).returning();
+        return result[0];
+      },
+      {} as User
+    );
   }
 
   // Initialize data for the database
