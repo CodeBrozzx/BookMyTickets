@@ -12,9 +12,9 @@ export default function Header() {
         </div>
         <nav>
           <ul className="flex space-x-6">
-            <li><Link href="/"><a className="hover:text-primary">Movies</a></Link></li>
-            <li><a href="#" className="hover:text-primary">Theaters</a></li>
-            <li><a href="#" className="hover:text-primary">My Bookings</a></li>
+            <li><Link href="/" className="hover:text-primary">Movies</Link></li>
+            <li><Button variant="link" className="p-0 hover:text-primary">Theaters</Button></li>
+            <li><Button variant="link" className="p-0 hover:text-primary">My Bookings</Button></li>
           </ul>
         </nav>
         <div>

@@ -41,19 +41,30 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize the database connection
+  // Try to connect to the database
   const dbConnected = await initDb();
   
-  // Create a new PgStorage instance if the database is connected
+  // Determine which storage to use
   let activeStorage = storage;
-  if (dbConnected) {
-    log("Using PostgreSQL database for storage");
-    const pgStorage = new PgStorage();
-    // Switch to the PostgreSQL storage
-    Object.assign(storage, pgStorage);
-    // Initialize the database with sample data
-    await pgStorage.initializeData();
-  } else {
-    log("Using in-memory storage");
+  try {
+    if (dbConnected) {
+      log("Using PostgreSQL database for storage");
+      const pgStorage = new PgStorage();
+      // Switch to the PostgreSQL storage
+      Object.assign(storage, pgStorage);
+      // Initialize the database with sample data
+      await pgStorage.initializeData();
+    } else {
+      log("Database connection failed, using in-memory storage");
+      // Ensure in-memory storage is initialized
+      await storage.initializeData();
+    }
+  } catch (error) {
+    log(`Error setting up storage: ${error}`);
+    log("Falling back to in-memory storage");
+    // Ensure we're using in-memory storage if there's an error
+    // and that it's initialized
+    await storage.initializeData();
   }
   
   const server = await registerRoutes(app);
