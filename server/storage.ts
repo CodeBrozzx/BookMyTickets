@@ -213,4 +213,8 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Import HybridStorage
+import { HybridStorage } from './hybridStorage';
+
+// Use HybridStorage for more resilient database operations with in-memory fallback
+export const storage = new HybridStorage();
