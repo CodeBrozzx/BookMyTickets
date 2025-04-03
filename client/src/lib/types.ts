@@ -33,7 +33,7 @@ export interface Booking {
   showTimeId: number;
   seats: number[];
   totalAmount: number;
-  bookingDate: string;
+  bookingDate: Date;
   userId?: number;
 }
 
@@ -42,6 +42,6 @@ export interface BookingData {
   showTimeId: number;
   seats: number[];
   totalAmount: number;
-  bookingDate: string;
+  bookingDate: Date;
   userId?: number;
 }

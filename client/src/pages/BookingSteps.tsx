@@ -20,7 +20,7 @@ export default function BookingSteps() {
   const { toast } = useToast();
   
   // Booking state
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (time selection)
   const [selectedTime, setSelectedTime] = useState<ShowTime | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -34,13 +34,13 @@ export default function BookingSteps() {
   
   // Fetch showtimes
   const { data: showTimes, isLoading: isLoadingShowTimes } = useQuery<ShowTime[]>({
-    queryKey: ['/api/showtimes', params?.movieId],
+    queryKey: [`/api/showtimes/${params?.movieId}`],
     enabled: !!params?.movieId
   });
   
   // Fetch seats for a specific showtime
   const { data: availableSeats, isLoading: isLoadingSeats } = useQuery<Seat[]>({
-    queryKey: ['/api/seats', selectedTime?.id],
+    queryKey: [`/api/seats/${selectedTime?.id}`],
     enabled: !!selectedTime?.id,
   });
   
@@ -53,7 +53,7 @@ export default function BookingSteps() {
     onSuccess: (data) => {
       setBookingId(data.id);
       setCurrentStep(4);
-      queryClient.invalidateQueries({ queryKey: ['/api/seats', selectedTime?.id] });
+      queryClient.invalidateQueries({ queryKey: [`/api/seats/${selectedTime?.id}`] });
     },
     onError: (error) => {
       toast({
@@ -112,7 +112,7 @@ export default function BookingSteps() {
       showTimeId: selectedTime?.id || 0,
       seats: selectedSeats.map(seat => seat.id),
       totalAmount: calculateTotal(),
-      bookingDate: new Date().toISOString()
+      bookingDate: new Date()
     });
   };
   

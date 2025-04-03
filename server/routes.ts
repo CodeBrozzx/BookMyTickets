@@ -30,6 +30,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all showtimes
+  app.get("/api/showtimes", async (req, res) => {
+    try {
+      const showtimes = await storage.getAllShowtimes();
+      res.json(showtimes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch showtimes", error });
+    }
+  });
+
   // Get showtimes for a specific movie
   app.get("/api/showtimes/:movieId", async (req, res) => {
     try {
@@ -85,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         showTimeId,
         seats,
         totalAmount,
-        bookingDate: new Date().toISOString()
+        bookingDate: new Date()
       });
       
       // Mark the seats as booked
