@@ -10,10 +10,10 @@ import session from 'express-session';
  * when database connection issues occur to ensure the application remains functional.
  */
 export class HybridStorage implements IStorage {
-  private pgStorage!: PgStorage;
-  private memStorage!: MemStorage;
+  private pgStorage: PgStorage;
+  private memStorage: MemStorage;
   private useDatabase: boolean = true;
-  public sessionStore: session.Store;
+  private readonly sessionStore: session.Store;
   
   constructor() {
     try {
